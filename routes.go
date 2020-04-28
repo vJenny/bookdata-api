@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
+	"github.com/matt-FFFFFF/bookdata-api/loader"
 )
 
 func getAllBooks(w http.ResponseWriter, r *http.Request) {
@@ -24,6 +27,108 @@ func getAllBooks(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(b)
+	return
+}
+
+func getAllBooksByAuthor(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	vars := mux.Vars(r)
+	author, ok := vars["author"]
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "invalid argument"}`))
+		return
+	}
+	data := books.GetAllBooksByAuthor(author)
+	b, err := json.Marshal(data)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "error marshalling data"}`))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(b)
+	return
+}
+
+func getAllBooksByTitle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	vars := mux.Vars(r)
+	title, ok := vars["title"]
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "invalid argument"}`))
+		return
+	}
+	data := books.GetAllBooksByTitle(title)
+	b, err := json.Marshal(data)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "error marshalling data"}`))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(b)
+	return
+}
+
+func getBookByISBN(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	vars := mux.Vars(r)
+	isbn, ok := vars["isbn"]
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "invalid argument"}`))
+		return
+	}
+	data := books.GetBookByISBN(isbn)
+	b, err := json.Marshal(data)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "error marshalling data"}`))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(b)
+	return
+}
+
+func removeBookByISBN(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	vars := mux.Vars(r)
+	isbn, ok := vars["isbn"]
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "invalid argument"}`))
+		return
+	}
+	found := books.RemoveBookByISBN(isbn)
+	if found {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "no books with specified ISBN found"}`))
+	}
+	return
+}
+
+func addBookByISBN(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	r.ParseForm()
+	book := loader.BookData{
+		BookID:        r.Form.Get("BookID"),
+		Title:         r.Form.Get("Title"),
+		Authors:       r.Form.Get("Authors"),
+		AverageRating: loader.StrToFloat(r.Form.Get("AverageRating")),
+		ISBN:          r.Form.Get("ISBN"),
+		ISBN13:        r.Form.Get("ISBN13"),
+		LanguageCode:  r.Form.Get("LanguageCode"),
+		NumPages:      loader.StrToInt(r.Form.Get("NumPages")),
+		Ratings:       loader.StrToInt(r.Form.Get("Ratings")),
+		Reviews:       loader.StrToInt(r.Form.Get("Reviews")),
+	}
+	books.AddBook(book)
+	w.WriteHeader(http.StatusOK)
 	return
 }
 
